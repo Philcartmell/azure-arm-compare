@@ -83,7 +83,7 @@
             ],
             "properties": {
                 "cors": {
-                    "corsRules": []
+                    "corsRules": ["abc"]
                 }
             }
         },
@@ -100,41 +100,7 @@
                     "enabled": false
                 },
                 "defaultEncryptionScope": "$account-encryption-key",
-                "denyEncryptionScopeOverride": false,
-                "publicAccess": "None"
-            }
-        },
-        {
-            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
-            "apiVersion": "2023-05-01",
-            "name": "storage001/default/tf-state",
-            "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', 'storage001', 'default')]",
-                "[resourceId('Microsoft.Storage/storageAccounts', 'storage001')]"
-            ],
-            "properties": {
-                "immutableStorageWithVersioning": {
-                    "enabled": false
-                },
-                "defaultEncryptionScope": "$account-encryption-key",
-                "denyEncryptionScopeOverride": false,
-                "publicAccess": "None"
-            }
-        },
-        {
-            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
-            "apiVersion": "2023-05-01",
-            "name": "storage001/default/vpnlogs",
-            "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', 'storage001', 'default')]",
-                "[resourceId('Microsoft.Storage/storageAccounts', 'storage001')]"
-            ],
-            "properties": {
-                "immutableStorageWithVersioning": {
-                    "enabled": false
-                },
-                "defaultEncryptionScope": "$account-encryption-key",
-                "denyEncryptionScopeOverride": false,
+                "denyEncryptionScopeOverride": true,
                 "publicAccess": "None"
             }
         },

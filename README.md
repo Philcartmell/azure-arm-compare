@@ -1,24 +1,35 @@
-# Azure ARM Comparer
+# ARM Compare
 
-Azure ARM Comparer is a Python script designed to compare two Azure Resource Manager (ARM) template export files. The script focuses on comparing the configuration attributes of resources, generating a detailed Markdown report that includes both a summary and a full property-by-property comparison for each matched resource.
+ARM Compare is a Python script designed to compare two Azure Resource Manager (ARM) template export files. The script focuses on comparing the configuration attributes of resources, generating a detailed Markdown report that includes both a summary and a full property-by-property comparison for each matched resource.
 
 The report contains clickable anchors in the summary table, allowing you to jump directly to the detailed comparison for any resource.
 
 ## Features
 
-- **Resource Pairing by Type and Name:** Automatically pairs resources based on their type and name. You can also provide custom mappings in a YAML configuration file if resource names differ.
-- **Wildcard Ignore Rules:** Exclude specific properties from the comparison using wildcard patterns (e.g., `tags.*`).
-- **Detailed Markdown Report:** Generates a report with a summary table, detailed comparison tables (including line numbers), and lists of unmatched resources.
-- **Clickable Anchors:** The resource names in the summary are clickable links that scroll down to their detailed comparison sections.
-- **Fail Column:** In the detailed comparison, any property that fails (i.e. the left and right values differ) is marked with a cross (✗). Properties that are ignored show **Ignored**, while matching properties leave the cell blank for easier review.
+- **Resource Pairing by Type and Name:**  
+  Automatically pairs resources based on their type and name. You can also provide custom mappings in a YAML configuration file if resource names differ.
+
+- **Enhanced Prefix-Based Resource Mapping:**  
+  When you provide a mapping with a base resource type and name, child resources are automatically paired by appending any additional segments. For example, a mapping defined for  
+  `Microsoft.Storage/storageAccounts` with name `storage001` will automatically map a resource such as  
+  `Microsoft.Storage/storageAccounts/blobServices` with name `storage001/default` to the corresponding target by appending `/blobServices` and `/default` to the right-side mapping.
+
+- **Wildcard Ignore Rules:**  
+  Exclude specific properties from the comparison using wildcard patterns (e.g., `tags.*` or `dependsOn*`).
+
+- **Detailed Markdown Report:**  
+  Generates a report with a summary table and detailed comparison tables. The comparison tables list properties side-by-side with a **Fail** column marking differences using a cross (✗).  
+
+- **Clickable Anchors:**  
+  The resource names in the summary are clickable links that scroll down to their detailed comparison sections.
 
 ## Setup
 
 1. **Clone the Repository:**
 
    ```bash
-   git clone https://github.com/yourusername/azure-arm-comparer.git
-   cd azure-arm-comparer
+   git clone https://github.com/Philcartmell/azure-arm-compare.git
+   cd azure-arm-compare
    ```
 
 2. **Install Dependencies:**
@@ -37,19 +48,22 @@ A YAML configuration file is optional but recommended if your ARM templates use 
 
 ### Sample YAML Configuration (`config.yaml`)
 
+The config.yaml file is optional, but unless the resource names are identical you'll probably want to provide it.
+
 ```yaml
 ignoreRules:
-  - "properties.provisioningState"
-  - "tags.*"
+  - "name"
+  - "dependsOn*"
 resourceMappings:
-  - leftResourceType: "Microsoft.Compute/virtualMachines"
-    leftResourceName: "myLeftVM"
-    rightResourceType: "Microsoft.Compute/virtualMachines"
-    rightResourceName: "myRightVM"
+  - leftResourceType: "Microsoft.Storage/storageAccounts"
+    leftResourceName: "storage001"
+    rightResourceType: "Microsoft.Storage/storageAccounts"
+    rightResourceName: "storage002"
 ```
 
 - **ignoreRules:** A list of property paths to ignore during comparison. Wildcards are supported.
-- **resourceMappings:** A list of mappings to manually pair resources if their names differ between the left and right ARM templates.
+- **resourceMappings:**  
+  A list of mappings to manually pair resources if their names differ between the left and right ARM templates. The enhanced mapping logic supports prefix-based matching so that if a resource’s type and name start with the specified mapping values, any additional segments (child resources) are automatically appended to the right-side mapping.
 
 ## How to Use It
 
@@ -65,71 +79,6 @@ Run the script using the command line with the following arguments:
 ```bash
 python arm-compare.py --left samples/left.json --right samples/right.json --config config.yaml --output sample_output.md
 ```
-
-## Sample Markdown Output
-
-Below is an example of the generated Markdown output with the updated **Fail** column.
-
-```markdown
-# Summary
-
-## Ignored Properties
-
-The following properties were ignored during comparisons:
-- properties.provisioningState
-- tags.*
-
-## Compared Resources
-
-| Resource Type                     | Name                                                          | Total Properties | Correct | Incorrect |
-| --------------------------------- | ------------------------------------------------------------- | ---------------- | ------- | --------- |
-| Microsoft.Compute/virtualMachines | [myLeftVM](#microsoftcompute-virtualmachines-myleftvm)         | 25               | 23      | 2         |
-| Microsoft.Storage/storageAccounts | [mystorage](#microsoftstorage-storageaccounts-mystorage)         | 18               | 18      | 0         |
-
-## Unmatched Resources in Left Template
-
-| Resource Type                         | Name        |
-| ------------------------------------- | ----------- |
-| Microsoft.Network/networkInterfaces   | nicLeft     |
-
-## Unmatched Resources in Right Template
-
-| Resource Type                         | Name        |
-| ------------------------------------- | ----------- |
-| Microsoft.Network/networkInterfaces   | nicRight    |
-
----
-
-<a id="microsoftcompute-virtualmachines-myleftvm"></a>
-### Comparison for Resource: Microsoft.Compute/virtualMachines / myLeftVM
-
-| Property Path                               | Left Value (Line No.)      | Right Value (Line No.)     | Fail     |
-| ------------------------------------------- | -------------------------- | -------------------------- | -------- |
-| properties.hardwareProfile.vmSize           | Standard_DS2_v2 (45)       | Standard_DS2_v2 (46)       |          |
-| properties.storageProfile.osDisk.name       | osDisk1 (50)               | osDisk1-renamed (51)       | ✗        |
-... (additional rows)
-
-<a id="microsoftstorage-storageaccounts-mystorage"></a>
-### Comparison for Resource: Microsoft.Storage/storageAccounts / mystorage
-
-| Property Path                | Left Value (Line No.) | Right Value (Line No.) | Fail     |
-| ---------------------------- | --------------------- | ---------------------- | -------- |
-| properties.accountType       | Standard_LRS (30)     | Standard_LRS (31)      |          |
-... (additional rows)
-```
-
-## Version / Release History
-
-- **v1.1.0** (2025-02-23)
-  - Updated detailed comparison table with a **Fail** column.
-  - Properties that match leave the cell empty.
-  - Non-matching properties are marked with a cross (✗).
-  - Ignored properties display "Ignored" and are listed in the summary.
-- **v1.0.0** (2025-02-23)
-  - Initial release.
-  - Resource pairing by type and name.
-  - Detailed Markdown output with clickable summary links.
-  - Support for wildcard ignore rules and resource mappings.
 
 ## Contributing
 

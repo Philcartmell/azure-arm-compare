@@ -69,38 +69,6 @@ def flatten_json(data, parent_key=''):
         items[parent_key] = data
     return items
 
-def find_line_number(resource_key, prop_key, raw_lines, start_line=0):
-    """
-    Naively searches for the resource key (e.g. type and name) in the raw JSON lines to determine a starting line.
-    Then, from that point, searches for the given property key (wrapped in quotes).
-    Returns a 1-indexed line number or an empty string if not found.
-    """
-    resource_start = None
-    for idx, line in enumerate(raw_lines):
-        if resource_key in line:
-            resource_start = idx
-            break
-    if resource_start is None:
-        resource_start = start_line
-    for idx in range(resource_start, len(raw_lines)):
-        if f'"{prop_key}"' in raw_lines[idx] or f"'{prop_key}'" in raw_lines[idx]:
-            return idx + 1  # convert to 1-indexed
-    return ''
-
-def get_resource_line_numbers(resource, raw_lines):
-    """
-    For a given resource (a dict) and the raw JSON lines (as a list),
-    returns a mapping from each flattened property path to the line number
-    where its last key segment is found.
-    """
-    line_numbers = {}
-    resource_key = f'{resource.get("type", "")} {resource.get("name", "")}'
-    flat = flatten_json(resource)
-    for key in flat.keys():
-        last_segment = key.split('.')[-1]
-        line_numbers[key] = find_line_number(resource_key, last_segment, raw_lines)
-    return line_numbers
-
 def generate_anchor(resource_type, resource_name):
     """
     Generates a sanitized anchor string based on resource type and name.
@@ -109,17 +77,16 @@ def generate_anchor(resource_type, resource_name):
     anchor = re.sub(r'[^a-zA-Z0-9-]', '', combined.replace(' ', '-')).lower()
     return anchor
 
-def generate_markdown_table(resource_key_display, left_flat, right_flat, left_lines, right_lines, ignore_rules, ignored_set):
+def generate_markdown_table(resource_key_display, left_flat, right_flat, ignore_rules, ignored_set):
     """
-    Given two flattened dicts for a resource (left and right), along with mappings of property keys to their detected
-    line numbers, generate a Markdown table comparing the property values.
+    Given two flattened dicts for a resource (left and right), generate a Markdown table comparing the property values.
     If a property key matches an ignore rule, its fail result is set to "Ignored" (and added to ignored_set);
     if it doesn't match and the left/right values differ, a cross (✗) is printed;
     if they match, the cell is left empty.
     """
     md_lines = []
     md_lines.append(f"### Comparison for Resource: {resource_key_display}\n")
-    md_lines.append("| Property Path | Left Value (Line No.) | Right Value (Line No.) | Fail |")
+    md_lines.append("| Property Path | Left Value | Right Value | Fail |")
     md_lines.append("| --- | --- | --- | --- |")
     all_keys = set(left_flat.keys()).union(set(right_flat.keys()))
     for key in sorted(all_keys):
@@ -131,17 +98,12 @@ def generate_markdown_table(resource_key_display, left_flat, right_flat, left_li
             fail_cell = "" if left_flat.get(key, '') == right_flat.get(key, '') else "✗"
         left_val = left_flat.get(key, '')
         right_val = right_flat.get(key, '')
-        left_line = left_lines.get(key, '')
-        right_line = right_lines.get(key, '')
-        left_val_with_line = f"{left_val} ({left_line})" if left_line else f"{left_val}"
-        right_val_with_line = f"{right_val} ({right_line})" if right_line else f"{right_val}"
-        md_lines.append(f"| {key} | {left_val_with_line} | {right_val_with_line} | {fail_cell} |")
+        md_lines.append(f"| {key} | {left_val} | {right_val} | {fail_cell} |")
     return "\n".join(md_lines)
 
 def main():
     args = parse_arguments()
 
-    # Check if left and right files exist (config is optional)
     if not os.path.exists(args.left):
         exit_with_error(f"Error: Left file '{args.left}' does not exist.")
     if not os.path.exists(args.right):
@@ -149,21 +111,9 @@ def main():
     if args.config and not os.path.exists(args.config):
         exit_with_error(f"Error: Config file '{args.config}' does not exist.")
 
-    # Load JSON templates and raw lines for line number detection.
     left_template = load_json_file(args.left)
     right_template = load_json_file(args.right)
-    try:
-        with open(args.left, 'r') as f:
-            left_raw_lines = f.readlines()
-    except Exception as e:
-        exit_with_error(f"Error: Failed to read left file raw lines: {e}")
-    try:
-        with open(args.right, 'r') as f:
-            right_raw_lines = f.readlines()
-    except Exception as e:
-        exit_with_error(f"Error: Failed to read right file raw lines: {e}")
 
-    # Load YAML configuration if provided.
     config = {}
     ignore_rules = []
     resource_mappings = []
@@ -172,14 +122,11 @@ def main():
         ignore_rules = config.get('ignoreRules', [])
         resource_mappings = config.get('resourceMappings', [])
     
-    # Always add "dependsOn" to the ignore rules.
     if "dependsOn" not in ignore_rules:
         ignore_rules.append("dependsOn")
 
-    # Global set to accumulate all ignored property keys.
     ignored_properties = set()
 
-    # Extract resources (assumed under "resources") and pair by (type, name).
     left_resources = left_template.get("resources", [])
     right_resources = right_template.get("resources", [])
 
@@ -190,18 +137,28 @@ def main():
     right_dict = {get_key(res): res for res in right_resources if res.get("type") and res.get("name")}
 
     resource_pairs = []
-    summary_entries = []  # Each entry: (resource_type, resource_name, total, correct, incorrect, anchor)
+    summary_entries = []
 
-    # Use resourceMappings from config if provided.
+    # Enhanced partial mapping based on prefixes
     for mapping in resource_mappings:
-        left_key = (mapping.get("leftResourceType"), mapping.get("leftResourceName"))
-        right_key = (mapping.get("rightResourceType"), mapping.get("rightResourceName"))
-        if left_key in left_dict and right_key in right_dict:
-            resource_pairs.append((left_dict[left_key], right_dict[right_key]))
-            del left_dict[left_key]
-            del right_dict[right_key]
+        left_prefix_type = mapping.get("leftResourceType")
+        left_prefix_name = mapping.get("leftResourceName")
+        right_prefix_type = mapping.get("rightResourceType")
+        right_prefix_name = mapping.get("rightResourceName")
+        
+        for key in list(left_dict.keys()):
+            ltype, lname = key
+            if ltype.startswith(left_prefix_type) and lname.startswith(left_prefix_name):
+                type_remainder = ltype[len(left_prefix_type):]
+                name_remainder = lname[len(left_prefix_name):]
+                candidate_right_type = right_prefix_type + type_remainder
+                candidate_right_name = right_prefix_name + name_remainder
+                candidate_key = (candidate_right_type, candidate_right_name)
+                if candidate_key in right_dict:
+                    resource_pairs.append((left_dict[key], right_dict[candidate_key]))
+                    del left_dict[key]
+                    del right_dict[candidate_key]
 
-    # Pair any remaining resources by (type, name).
     for key in list(left_dict.keys()):
         if key in right_dict:
             resource_pairs.append((left_dict[key], right_dict[key]))
@@ -220,11 +177,9 @@ def main():
 
         left_flat = flatten_json(left_res)
         right_flat = flatten_json(right_res)
-        left_line_numbers = get_resource_line_numbers(left_res, left_raw_lines)
-        right_line_numbers = get_resource_line_numbers(right_res, right_raw_lines)
         
-        all_keys = set(left_flat.keys()).union(set(right_flat.keys()))
         total = correct = incorrect = 0
+        all_keys = set(left_flat.keys()).union(set(right_flat.keys()))
         for key in sorted(all_keys):
             is_ignored = ignore_rules and any(fnmatch.fnmatch(key, pattern) for pattern in ignore_rules)
             total += 1
@@ -236,20 +191,18 @@ def main():
 
         summary_entries.append((resource_type, resource_name, total, correct, incorrect, anchor))
         detailed_section = f'<a id="{anchor}"></a>\n'
-        detailed_section += generate_markdown_table(resource_key_display, left_flat, right_flat, left_line_numbers, right_line_numbers, ignore_rules, ignored_properties)
+        detailed_section += generate_markdown_table(resource_key_display, left_flat, right_flat, ignore_rules, ignored_properties)
         detailed_sections.append(detailed_section)
         detailed_sections.append("\n")
 
-    # Build summary section.
     summary_lines = []
     summary_lines.append("# Summary\n")
-    # Add a section for Ignored Properties if any were found.
     if ignored_properties:
         summary_lines.append("## Ignored Properties\n")
         summary_lines.append("The following properties were ignored during comparisons:")
         for prop in sorted(ignored_properties):
             summary_lines.append(f"- {prop}")
-        summary_lines.append("")  # Blank line
+        summary_lines.append("")
 
     summary_lines.append("## Compared Resources\n")
     summary_lines.append("| Resource Type | Name | Total Properties | Correct | Incorrect |")
@@ -258,7 +211,6 @@ def main():
         rtype, rname, total, correct, incorrect, anchor = entry
         summary_lines.append(f"| {rtype} | [{rname}](#{anchor}) | {total} | {correct} | {incorrect} |")
     
-    # Build unmatched resources summary as tables.
     if left_dict:
         summary_lines.append("\n## Unmatched Resources in Left Template\n")
         summary_lines.append("| Resource Type | Name |")

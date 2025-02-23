@@ -1,5 +1,6 @@
 ignoreRules:
   - "name"
+  - "dependsOn*"
 resourceMappings:
   - leftResourceType: "Microsoft.Storage/storageAccounts"
     leftResourceName: "storage001"
