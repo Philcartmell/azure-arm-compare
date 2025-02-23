@@ -1,0 +1,9 @@
+ignoreRules:
+  - "name"
+  - "dependsOn*"
+resourceMappings:
+  - leftResourceType: "Microsoft.Storage/storageAccounts"
+    leftResourceName: "storage001"
+    rightResourceType: "Microsoft.Storage/storageAccounts"
+    rightResourceName: "storage002"
+
