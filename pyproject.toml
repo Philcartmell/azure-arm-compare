@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=42", "wheel", "build"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arm-compare"
+version = "0.0.2"
+description = "A tool to compare ARM templates (Azure)."
+readme = "README.md"
+requires-python = ">=3.6"
+license = { text = "MIT License" }
+authors = [
+  { name = "Phil Cartmell", email = "phil@cartyio.onmicrosoft.com" }
+]
+dependencies = [
+  "pyyaml",
+]
+
+[project.urls]
+Homepage = "https://github.com/Philcartmell/azure-arm-compare"
+
+[project.scripts]
+arm-compare = "arm_compare:main"
