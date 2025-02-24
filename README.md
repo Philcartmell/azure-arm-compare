@@ -23,7 +23,30 @@ The report contains clickable anchors in the summary table, allowing you to jump
 - **Clickable Anchors:**  
   The resource names in the summary are clickable links that scroll down to their detailed comparison sections.
 
-## Setup
+## Download or Install
+
+### PyPI
+
+```bash
+pip install azure-arm-compare
+```
+
+Once installed, you can use the command-line tool by running:
+
+```bash
+arm-compare --help
+```
+
+Or, if you prefer to use it programmatically in your Python code:
+
+```python
+import arm_compare
+
+# For example, to invoke the main function:
+arm_compare.main()
+```
+
+### GitHub clone
 
 1. **Clone the Repository:**
 
@@ -37,6 +60,18 @@ The report contains clickable anchors in the summary table, allowing you to jump
    ```bash
    pip install -r requirements.txt
    ```
+
+## How to Use It
+
+See `samples` folder.
+
+Run the script using the command line with the following arguments:
+
+- `--left`: Path to the left ARM template JSON file.
+- `--right`: Path to the right ARM template JSON file.
+- `--config`: (Optional) Path to a YAML configuration file.
+- `--output`: Path to the output file where the comparison result will be saved.
+- `--format`: (Optional) Output format: either `markdown` or `html` (default).
 
 ## Exporting ARM Templates
 
@@ -65,43 +100,10 @@ resourceMappings:
 - **resourceMappings:**  
   A list of mappings to manually pair resources if their names differ between the left and right ARM templates. The enhanced mapping logic supports prefix-based matching so that if a resource’s type and name start with the specified mapping values, any additional segments (child resources) are automatically appended to the right-side mapping.
 
-## How to Use It
-
-Run the script using the command line with the following arguments:
-
-- `--left`: Path to the left ARM template JSON file.
-- `--right`: Path to the right ARM template JSON file.
-- `--config`: (Optional) Path to a YAML configuration file.
-- `--output`: Path to the output file where the comparison result will be saved.
-- `--format`: (Optional) Output format: either `markdown` or `html` (default).
-
 ### Example Execution
 
 ```bash
 python arm-compare.py --left samples/left.json --right samples/right.json --config config.yaml --output sample_output.md
-```
-
-## Consuming the Package from PyPI
-
-You can now install the package directly from PyPI:
-
-```bash
-pip install azure-arm-compare
-```
-
-Once installed, you can use the command-line tool by running:
-
-```bash
-arm-compare --help
-```
-
-Or, if you prefer to use it programmatically in your Python code:
-
-```python
-import arm_compare
-
-# For example, to invoke the main function:
-arm_compare.main()
 ```
 
 ## Release History
