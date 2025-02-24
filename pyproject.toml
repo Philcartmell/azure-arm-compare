@@ -20,7 +20,7 @@ dependencies = [
 Homepage = "https://github.com/Philcartmell/azure-arm-compare"
 
 [project.scripts]
-arm-compare = "arm_compare:main"
+arm-compare = "arm_compare.arm_compare:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

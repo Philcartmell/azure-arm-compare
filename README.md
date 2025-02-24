@@ -81,9 +81,36 @@ Run the script using the command line with the following arguments:
 python arm-compare.py --left samples/left.json --right samples/right.json --config config.yaml --output sample_output.md
 ```
 
+## Consuming the Package from PyPI
+
+You can now install the package directly from PyPI:
+
+```bash
+pip install azure-arm-compare
+```
+
+Once installed, you can use the command-line tool by running:
+
+```bash
+arm-compare --help
+```
+
+Or, if you prefer to use it programmatically in your Python code:
+
+```python
+import arm_compare
+
+# For example, to invoke the main function:
+arm_compare.main()
+```
+
 ## Release History
 
-### Version 0.0.2 (Latest)
+### Version 0.0.3
+
+No functional changes - Fix to PyPI release.
+
+### Version 0.0.2
 - **HTML as Default Output:** HTML output is now the default output format.
 - **Expandable Value Cells:**  
   For HTML output, if a left or right value exceeds 64 characters, the script truncates it and provides a `[more]` link. Clicking the link expands the full value and toggles to `[less]` to collapse it again.
