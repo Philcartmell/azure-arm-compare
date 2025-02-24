@@ -21,3 +21,7 @@ Homepage = "https://github.com/Philcartmell/azure-arm-compare"
 
 [project.scripts]
 arm-compare = "arm_compare:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["arm_compare*"]
