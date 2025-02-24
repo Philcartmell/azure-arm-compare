@@ -1,0 +1,190 @@
+<html>
+<head>
+<meta charset='UTF-8'>
+<title>Comparison Report</title>
+<style>
+table { width: 100%; max-width: 100%; border-collapse: collapse; }
+th, td { border: 1px solid #000; padding: 4px; overflow-wrap: break-word; word-wrap: break-word; }
+</style>
+<script>
+function toggleMore(link) {
+  var full = link.previousElementSibling;
+  var truncated = full.previousElementSibling;
+  if (full.style.display === 'none') {
+    full.style.display = 'inline';
+    truncated.style.display = 'none';
+    link.textContent = '[less]';
+  } else {
+    full.style.display = 'none';
+    truncated.style.display = 'inline';
+    link.textContent = '[more]';
+  }
+}
+function highlightRow(cell) {
+  var row = cell.parentNode;
+  if(row.style.backgroundColor === 'yellow') {
+    row.style.backgroundColor = '';
+  } else {
+    row.style.backgroundColor = 'yellow';
+  }
+}
+</script>
+</head>
+<body>
+<h1>Summary</h1>
+<h2>Ignored Properties</h2>
+<p>The following properties were ignored during comparisons:</p>
+<ul>
+<li>dependsOn[0]</li>
+<li>dependsOn[1]</li>
+<li>name</li>
+</ul>
+<h2>Compared Resources</h2>
+<table>
+<thead>
+<tr><th>Resource Type</th><th>Name</th><th>Total Properties</th><th>Ignored</th><th>Correct</th><th>Incorrect</th></tr>
+</thead>
+<tbody>
+<tr><td>Microsoft.Storage/storageAccounts/blobServices</td><td><a href='#microsoftstoragestorageaccountsblobservices-storage001default'>storage001/default</a></td><td>14</td><td>2</td><td>12</td><td>0</td></tr>
+<tr><td>Microsoft.Storage/storageAccounts/fileServices</td><td><a href='#microsoftstoragestorageaccountsfileservices-storage001default'>storage001/default</a></td><td>8</td><td>2</td><td>6</td><td>0</td></tr>
+<tr><td>Microsoft.Storage/storageAccounts/queueServices</td><td><a href='#microsoftstoragestorageaccountsqueueservices-storage001default'>storage001/default</a></td><td>5</td><td>2</td><td>2</td><td>1</td></tr>
+<tr><td>Microsoft.Storage/storageAccounts/tableServices</td><td><a href='#microsoftstoragestorageaccountstableservices-storage001default'>storage001/default</a></td><td>5</td><td>2</td><td>2</td><td>1</td></tr>
+<tr><td>Microsoft.Storage/storageAccounts/blobServices/containers</td><td><a href='#microsoftstoragestorageaccountsblobservicescontainers-storage001defaultimages'>storage001/default/images</a></td><td>9</td><td>3</td><td>5</td><td>1</td></tr>
+<tr><td>Microsoft.Storage/storageAccounts</td><td><a href='#microsoftstoragestorageaccounts-storage001'>storage001</a></td><td>25</td><td>1</td><td>19</td><td>5</td></tr>
+</tbody>
+</table>
+<hr>
+<a id="microsoftstoragestorageaccountsblobservices-storage001default"></a>
+<h3>Comparison for Resource: Microsoft.Storage/storageAccounts/blobServices / storage001/default</h3>
+<table>
+<thead>
+<tr><th>Matched</th><th>Property Path</th><th>Left Value</th><th>Right Value</th></tr>
+</thead>
+<tbody>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>apiVersion</td><td>2023-05-01</td><td>2023-05-01</td></tr>
+<tr><td>Ignored</td><td onclick='highlightRow(this);' style='cursor: pointer;'>dependsOn[0]</td><td>[resourceId('Microsoft.Storage/storageAccounts', 'storage001')]</td><td>[resourceId('Microsoft.Storage/storageAccounts', 'storage002')]</td></tr>
+<tr><td>Ignored</td><td onclick='highlightRow(this);' style='cursor: pointer;'>name</td><td>storage001/default</td><td>storage002/default</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.changeFeed.enabled</td><td>False</td><td>False</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.containerDeleteRetentionPolicy.days</td><td>7</td><td>7</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.containerDeleteRetentionPolicy.enabled</td><td>True</td><td>True</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.deleteRetentionPolicy.allowPermanentDelete</td><td>False</td><td>False</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.deleteRetentionPolicy.days</td><td>7</td><td>7</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.deleteRetentionPolicy.enabled</td><td>True</td><td>True</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.isVersioningEnabled</td><td>False</td><td>False</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.restorePolicy.enabled</td><td>False</td><td>False</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>sku.name</td><td>Standard_RAGRS</td><td>Standard_RAGRS</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>sku.tier</td><td>Standard</td><td>Standard</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>type</td><td>Microsoft.Storage/storageAccounts/blobServices</td><td>Microsoft.Storage/storageAccounts/blobServices</td></tr>
+</tbody>
+</table>
+
+
+<a id="microsoftstoragestorageaccountsfileservices-storage001default"></a>
+<h3>Comparison for Resource: Microsoft.Storage/storageAccounts/fileServices / storage001/default</h3>
+<table>
+<thead>
+<tr><th>Matched</th><th>Property Path</th><th>Left Value</th><th>Right Value</th></tr>
+</thead>
+<tbody>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>apiVersion</td><td>2023-05-01</td><td>2023-05-01</td></tr>
+<tr><td>Ignored</td><td onclick='highlightRow(this);' style='cursor: pointer;'>dependsOn[0]</td><td>[resourceId('Microsoft.Storage/storageAccounts', 'storage001')]</td><td>[resourceId('Microsoft.Storage/storageAccounts', 'storage002')]</td></tr>
+<tr><td>Ignored</td><td onclick='highlightRow(this);' style='cursor: pointer;'>name</td><td>storage001/default</td><td>storage002/default</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.shareDeleteRetentionPolicy.days</td><td>7</td><td>7</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.shareDeleteRetentionPolicy.enabled</td><td>True</td><td>True</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>sku.name</td><td>Standard_RAGRS</td><td>Standard_RAGRS</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>sku.tier</td><td>Standard</td><td>Standard</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>type</td><td>Microsoft.Storage/storageAccounts/fileServices</td><td>Microsoft.Storage/storageAccounts/fileServices</td></tr>
+</tbody>
+</table>
+
+
+<a id="microsoftstoragestorageaccountsqueueservices-storage001default"></a>
+<h3>Comparison for Resource: Microsoft.Storage/storageAccounts/queueServices / storage001/default</h3>
+<table>
+<thead>
+<tr><th>Matched</th><th>Property Path</th><th>Left Value</th><th>Right Value</th></tr>
+</thead>
+<tbody>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>apiVersion</td><td>2023-05-01</td><td>2023-05-01</td></tr>
+<tr><td>Ignored</td><td onclick='highlightRow(this);' style='cursor: pointer;'>dependsOn[0]</td><td>[resourceId('Microsoft.Storage/storageAccounts', 'storage001')]</td><td>[resourceId('Microsoft.Storage/storageAccounts', 'storage002')]</td></tr>
+<tr><td>Ignored</td><td onclick='highlightRow(this);' style='cursor: pointer;'>name</td><td>storage001/default</td><td>storage002/default</td></tr>
+<tr><td>✗</td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.cors.corsRules[0]</td><td></td><td>zzz</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>type</td><td>Microsoft.Storage/storageAccounts/queueServices</td><td>Microsoft.Storage/storageAccounts/queueServices</td></tr>
+</tbody>
+</table>
+
+
+<a id="microsoftstoragestorageaccountstableservices-storage001default"></a>
+<h3>Comparison for Resource: Microsoft.Storage/storageAccounts/tableServices / storage001/default</h3>
+<table>
+<thead>
+<tr><th>Matched</th><th>Property Path</th><th>Left Value</th><th>Right Value</th></tr>
+</thead>
+<tbody>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>apiVersion</td><td>2023-05-01</td><td>2023-05-01</td></tr>
+<tr><td>Ignored</td><td onclick='highlightRow(this);' style='cursor: pointer;'>dependsOn[0]</td><td>[resourceId('Microsoft.Storage/storageAccounts', 'storage001')]</td><td>[resourceId('Microsoft.Storage/storageAccounts', 'storage002')]</td></tr>
+<tr><td>Ignored</td><td onclick='highlightRow(this);' style='cursor: pointer;'>name</td><td>storage001/default</td><td>storage002/default</td></tr>
+<tr><td>✗</td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.cors.corsRules[0]</td><td>abc</td><td></td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>type</td><td>Microsoft.Storage/storageAccounts/tableServices</td><td>Microsoft.Storage/storageAccounts/tableServices</td></tr>
+</tbody>
+</table>
+
+
+<a id="microsoftstoragestorageaccountsblobservicescontainers-storage001defaultimages"></a>
+<h3>Comparison for Resource: Microsoft.Storage/storageAccounts/blobServices/containers / storage001/default/images</h3>
+<table>
+<thead>
+<tr><th>Matched</th><th>Property Path</th><th>Left Value</th><th>Right Value</th></tr>
+</thead>
+<tbody>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>apiVersion</td><td>2023-05-01</td><td>2023-05-01</td></tr>
+<tr><td>Ignored</td><td onclick='highlightRow(this);' style='cursor: pointer;'>dependsOn[0]</td><td><span class="truncated">[resourceId('Microsoft.Storage/storageAccounts/blobServices', 's</span><span class="full" style="display:none;">[resourceId('Microsoft.Storage/storageAccounts/blobServices', 'storage001', 'default')]</span> <a href="#" class="toggle-more" onclick="toggleMore(this); return false;">[more]</a></td><td><span class="truncated">[resourceId('Microsoft.Storage/storageAccounts/blobServices', 's</span><span class="full" style="display:none;">[resourceId('Microsoft.Storage/storageAccounts/blobServices', 'storage002', 'default')]</span> <a href="#" class="toggle-more" onclick="toggleMore(this); return false;">[more]</a></td></tr>
+<tr><td>Ignored</td><td onclick='highlightRow(this);' style='cursor: pointer;'>dependsOn[1]</td><td>[resourceId('Microsoft.Storage/storageAccounts', 'storage001')]</td><td>[resourceId('Microsoft.Storage/storageAccounts', 'storage002')]</td></tr>
+<tr><td>Ignored</td><td onclick='highlightRow(this);' style='cursor: pointer;'>name</td><td>storage001/default/images</td><td>storage002/default/images</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.defaultEncryptionScope</td><td>$account-encryption-key</td><td>$account-encryption-key</td></tr>
+<tr><td>✗</td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.denyEncryptionScopeOverride</td><td>True</td><td>False</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.immutableStorageWithVersioning.enabled</td><td>False</td><td>False</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.publicAccess</td><td>None</td><td>None</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>type</td><td>Microsoft.Storage/storageAccounts/blobServices/containers</td><td>Microsoft.Storage/storageAccounts/blobServices/containers</td></tr>
+</tbody>
+</table>
+
+
+<a id="microsoftstoragestorageaccounts-storage001"></a>
+<h3>Comparison for Resource: Microsoft.Storage/storageAccounts / storage001</h3>
+<table>
+<thead>
+<tr><th>Matched</th><th>Property Path</th><th>Left Value</th><th>Right Value</th></tr>
+</thead>
+<tbody>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>apiVersion</td><td>2023-05-01</td><td>2023-05-01</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>kind</td><td>StorageV2</td><td>StorageV2</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>location</td><td>uksouth</td><td>uksouth</td></tr>
+<tr><td>Ignored</td><td onclick='highlightRow(this);' style='cursor: pointer;'>name</td><td>storage001</td><td>storage002</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.accessTier</td><td>Hot</td><td>Hot</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.allowBlobPublicAccess</td><td>True</td><td>True</td></tr>
+<tr><td>✗</td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.allowCrossTenantReplication</td><td>False</td><td>True</td></tr>
+<tr><td>✗</td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.allowSharedKeyAccess</td><td>False</td><td>True</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.allowedCopyScope</td><td>AAD</td><td>AAD</td></tr>
+<tr><td>✗</td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.defaultToOAuthAuthentication</td><td>True</td><td>False</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.dnsEndpointType</td><td>Standard</td><td>Standard</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.encryption.keySource</td><td>Microsoft.Storage</td><td>Microsoft.Storage</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.encryption.requireInfrastructureEncryption</td><td>False</td><td>False</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.encryption.services.blob.enabled</td><td>True</td><td>True</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.encryption.services.blob.keyType</td><td>Account</td><td>Account</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.encryption.services.file.enabled</td><td>True</td><td>True</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.encryption.services.file.keyType</td><td>Account</td><td>Account</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.minimumTlsVersion</td><td>TLS1_2</td><td>TLS1_2</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.networkAcls.bypass</td><td>AzureServices</td><td>AzureServices</td></tr>
+<tr><td>✗</td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.networkAcls.defaultAction</td><td>Deny</td><td>Allow</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.publicNetworkAccess</td><td>Enabled</td><td>Enabled</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>properties.supportsHttpsTrafficOnly</td><td>True</td><td>True</td></tr>
+<tr><td>✗</td><td onclick='highlightRow(this);' style='cursor: pointer;'>sku.name</td><td>Standard_RAGRS</td><td>Standard_LRS</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>sku.tier</td><td>Standard</td><td>Standard</td></tr>
+<tr><td></td><td onclick='highlightRow(this);' style='cursor: pointer;'>type</td><td>Microsoft.Storage/storageAccounts</td><td>Microsoft.Storage/storageAccounts</td></tr>
+</tbody>
+</table>
+
+
+</body>
+</html>

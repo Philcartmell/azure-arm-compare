@@ -17,7 +17,8 @@ def parse_arguments():
     parser.add_argument('--left', required=True, help='Left ARM template JSON file')
     parser.add_argument('--right', required=True, help='Right ARM template JSON file')
     parser.add_argument('--config', help='Configuration YAML file (optional)')
-    parser.add_argument('--output', required=True, help='Output Markdown file')
+    parser.add_argument('--output', required=True, help='Output file')
+    parser.add_argument('--format', choices=['markdown', 'html'], default='html', help='Output format: markdown or html (default)')
     return parser.parse_args()
 
 def load_json_file(filepath):
@@ -86,7 +87,8 @@ def generate_markdown_table(resource_key_display, left_flat, right_flat, ignore_
     """
     md_lines = []
     md_lines.append(f"### Comparison for Resource: {resource_key_display}\n")
-    md_lines.append("| Property Path | Left Value | Right Value | Fail |")
+    # Matched column is the first column
+    md_lines.append("| Matched | Property Path | Left Value | Right Value |")
     md_lines.append("| --- | --- | --- | --- |")
     all_keys = set(left_flat.keys()).union(set(right_flat.keys()))
     for key in sorted(all_keys):
@@ -98,8 +100,188 @@ def generate_markdown_table(resource_key_display, left_flat, right_flat, ignore_
             fail_cell = "" if left_flat.get(key, '') == right_flat.get(key, '') else "✗"
         left_val = left_flat.get(key, '')
         right_val = right_flat.get(key, '')
-        md_lines.append(f"| {key} | {left_val} | {right_val} | {fail_cell} |")
+        md_lines.append(f"| {fail_cell} | {key} | {left_val} | {right_val} |")
     return "\n".join(md_lines)
+
+def format_html_value(value):
+    """
+    If value is longer than 64 characters, return HTML that shows a truncated version with a toggle link.
+    """
+    if not isinstance(value, str):
+        value = str(value)
+    if len(value) <= 64:
+        return value
+    truncated = value[:64]
+    return (f'<span class="truncated">{truncated}</span>'
+            f'<span class="full" style="display:none;">{value}</span> '
+            f'<a href="#" class="toggle-more" onclick="toggleMore(this); return false;">[more]</a>')
+
+def generate_html_table(resource_key_display, left_flat, right_flat, ignore_rules, ignored_set):
+    """
+    Given two flattened dicts for a resource (left and right), generate an HTML table comparing the property values.
+    If a property key matches an ignore rule, its cell will display "Ignored" (and be added to ignored_set);
+    if they differ, a cross (✗) is displayed in the "Matched" column.
+    """
+    html_lines = []
+    html_lines.append(f"<h3>Comparison for Resource: {resource_key_display}</h3>")
+    html_lines.append("<table>")
+    html_lines.append("<thead>")
+    html_lines.append("<tr><th>Matched</th><th>Property Path</th><th>Left Value</th><th>Right Value</th></tr>")
+    html_lines.append("</thead>")
+    html_lines.append("<tbody>")
+    all_keys = set(left_flat.keys()).union(set(right_flat.keys()))
+    for key in sorted(all_keys):
+        is_ignored = ignore_rules and any(fnmatch.fnmatch(key, pattern) for pattern in ignore_rules)
+        if is_ignored:
+            fail_cell = "Ignored"
+            ignored_set.add(key)
+        else:
+            fail_cell = "" if left_flat.get(key, '') == right_flat.get(key, '') else "✗"
+        left_val = left_flat.get(key, '')
+        right_val = right_flat.get(key, '')
+        # When Property Path cell is clicked, it highlights the row.
+        html_lines.append(f"<tr><td>{fail_cell}</td><td onclick='highlightRow(this);' style='cursor: pointer;'>{key}</td>"
+                          f"<td>{format_html_value(left_val)}</td><td>{format_html_value(right_val)}</td></tr>")
+    html_lines.append("</tbody>")
+    html_lines.append("</table>")
+    return "\n".join(html_lines)
+
+def generate_html_summary(summary_entries, ignored_properties, left_dict, right_dict):
+    """
+    Generates the HTML summary section with an additional "Ignored" column.
+    Each summary entry is a tuple of (resource_type, resource_name, total, ignored, correct, incorrect, anchor),
+    where total == ignored + correct + incorrect.
+    """
+    html = []
+    html.append("<h1>Summary</h1>")
+    if ignored_properties:
+        html.append("<h2>Ignored Properties</h2>")
+        html.append("<p>The following properties were ignored during comparisons:</p>")
+        html.append("<ul>")
+        for prop in sorted(ignored_properties):
+            html.append(f"<li>{prop}</li>")
+        html.append("</ul>")
+    html.append("<h2>Compared Resources</h2>")
+    html.append("<table>")
+    html.append("<thead>")
+    html.append("<tr><th>Resource Type</th><th>Name</th><th>Total Properties</th><th>Ignored</th><th>Correct</th><th>Incorrect</th></tr>")
+    html.append("</thead>")
+    html.append("<tbody>")
+    for entry in summary_entries:
+        rtype, rname, total, ignored, correct, incorrect, anchor = entry
+        html.append(f"<tr><td>{rtype}</td><td><a href='#{anchor}'>{rname}</a></td><td>{total}</td><td>{ignored}</td><td>{correct}</td><td>{incorrect}</td></tr>")
+    html.append("</tbody>")
+    html.append("</table>")
+    if left_dict:
+        html.append("<h2>Unmatched Resources in Left Template</h2>")
+        html.append("<table>")
+        html.append("<thead>")
+        html.append("<tr><th>Resource Type</th><th>Name</th></tr>")
+        html.append("</thead>")
+        html.append("<tbody>")
+        for res in left_dict.values():
+            rtype = res.get("type", "Unknown type")
+            rname = res.get("name", "Unknown name")
+            html.append(f"<tr><td>{rtype}</td><td>{rname}</td></tr>")
+        html.append("</tbody>")
+        html.append("</table>")
+    if right_dict:
+        html.append("<h2>Unmatched Resources in Right Template</h2>")
+        html.append("<table>")
+        html.append("<thead>")
+        html.append("<tr><th>Resource Type</th><th>Name</th></tr>")
+        html.append("</thead>")
+        html.append("<tbody>")
+        for res in right_dict.values():
+            rtype = res.get("type", "Unknown type")
+            rname = res.get("name", "Unknown name")
+            html.append(f"<tr><td>{rtype}</td><td>{rname}</td></tr>")
+        html.append("</tbody>")
+        html.append("</table>")
+    return "\n".join(html)
+
+def generate_markdown_summary(summary_entries, ignored_properties, left_dict, right_dict):
+    """
+    Generates the Markdown summary section with an additional "Ignored" column.
+    Each summary entry is a tuple of (resource_type, resource_name, total, ignored, correct, incorrect, anchor),
+    where total == ignored + correct + incorrect.
+    """
+    lines = []
+    lines.append("# Summary\n")
+    if ignored_properties:
+        lines.append("## Ignored Properties\n")
+        lines.append("The following properties were ignored during comparisons:")
+        for prop in sorted(ignored_properties):
+            lines.append(f"- {prop}")
+        lines.append("")
+    lines.append("## Compared Resources\n")
+    lines.append("| Resource Type | Name | Total Properties | Ignored | Correct | Incorrect |")
+    lines.append("| --- | --- | --- | --- | --- | --- |")
+    for entry in summary_entries:
+        rtype, rname, total, ignored, correct, incorrect, anchor = entry
+        lines.append(f"| {rtype} | [{rname}](#{anchor}) | {total} | {ignored} | {correct} | {incorrect} |")
+    if left_dict:
+        lines.append("\n## Unmatched Resources in Left Template\n")
+        lines.append("| Resource Type | Name |")
+        lines.append("| --- | --- |")
+        for res in left_dict.values():
+            rtype = res.get("type", "Unknown type")
+            rname = res.get("name", "Unknown name")
+            lines.append(f"| {rtype} | {rname} |")
+    if right_dict:
+        lines.append("\n## Unmatched Resources in Right Template\n")
+        lines.append("| Resource Type | Name |")
+        lines.append("| --- | --- |")
+        for res in right_dict.values():
+            rtype = res.get("type", "Unknown type")
+            rname = res.get("name", "Unknown name")
+            lines.append(f"| {rtype} | {rname} |")
+    return "\n".join(lines)
+
+def generate_html_output(summary_entries, ignored_properties, left_dict, right_dict, detailed_sections):
+    """
+    Generates the complete HTML output including summary and detailed comparison sections.
+    """
+    html_lines = []
+    html_lines.append("<html>")
+    html_lines.append("<head>")
+    html_lines.append("<meta charset='UTF-8'>")
+    html_lines.append("<title>Comparison Report</title>")
+    html_lines.append("<style>")
+    html_lines.append("table { width: 100%; max-width: 100%; border-collapse: collapse; }")
+    html_lines.append("th, td { border: 1px solid #000; padding: 4px; overflow-wrap: break-word; word-wrap: break-word; }")
+    html_lines.append("</style>")
+    html_lines.append("<script>")
+    html_lines.append("function toggleMore(link) {")
+    html_lines.append("  var full = link.previousElementSibling;")
+    html_lines.append("  var truncated = full.previousElementSibling;")
+    html_lines.append("  if (full.style.display === 'none') {")
+    html_lines.append("    full.style.display = 'inline';")
+    html_lines.append("    truncated.style.display = 'none';")
+    html_lines.append("    link.textContent = '[less]';")
+    html_lines.append("  } else {")
+    html_lines.append("    full.style.display = 'none';")
+    html_lines.append("    truncated.style.display = 'inline';")
+    html_lines.append("    link.textContent = '[more]';")
+    html_lines.append("  }")
+    html_lines.append("}")
+    html_lines.append("function highlightRow(cell) {")
+    html_lines.append("  var row = cell.parentNode;")
+    html_lines.append("  if(row.style.backgroundColor === 'yellow') {")
+    html_lines.append("    row.style.backgroundColor = '';")
+    html_lines.append("  } else {")
+    html_lines.append("    row.style.backgroundColor = 'yellow';")
+    html_lines.append("  }")
+    html_lines.append("}")
+    html_lines.append("</script>")
+    html_lines.append("</head>")
+    html_lines.append("<body>")
+    html_lines.append(generate_html_summary(summary_entries, ignored_properties, left_dict, right_dict))
+    html_lines.append("<hr>")
+    html_lines.extend(detailed_sections)
+    html_lines.append("</body>")
+    html_lines.append("</html>")
+    return "\n".join(html_lines)
 
 def main():
     args = parse_arguments()
@@ -178,64 +360,39 @@ def main():
         left_flat = flatten_json(left_res)
         right_flat = flatten_json(right_res)
         
-        total = correct = incorrect = 0
+        total = 0
+        correct = 0
+        incorrect = 0
+        ignored_count = 0
         all_keys = set(left_flat.keys()).union(set(right_flat.keys()))
         for key in sorted(all_keys):
             is_ignored = ignore_rules and any(fnmatch.fnmatch(key, pattern) for pattern in ignore_rules)
             total += 1
-            if not is_ignored:
+            if is_ignored:
+                ignored_count += 1
+            else:
                 if left_flat.get(key, '') == right_flat.get(key, ''):
                     correct += 1
                 else:
                     incorrect += 1
 
-        summary_entries.append((resource_type, resource_name, total, correct, incorrect, anchor))
+        summary_entries.append((resource_type, resource_name, total, ignored_count, correct, incorrect, anchor))
         detailed_section = f'<a id="{anchor}"></a>\n'
-        detailed_section += generate_markdown_table(resource_key_display, left_flat, right_flat, ignore_rules, ignored_properties)
+        if args.format == "html":
+            detailed_section += generate_html_table(resource_key_display, left_flat, right_flat, ignore_rules, ignored_properties)
+        else:
+            detailed_section += generate_markdown_table(resource_key_display, left_flat, right_flat, ignore_rules, ignored_properties)
         detailed_sections.append(detailed_section)
         detailed_sections.append("\n")
 
-    summary_lines = []
-    summary_lines.append("# Summary\n")
-    if ignored_properties:
-        summary_lines.append("## Ignored Properties\n")
-        summary_lines.append("The following properties were ignored during comparisons:")
-        for prop in sorted(ignored_properties):
-            summary_lines.append(f"- {prop}")
-        summary_lines.append("")
-
-    summary_lines.append("## Compared Resources\n")
-    summary_lines.append("| Resource Type | Name | Total Properties | Correct | Incorrect |")
-    summary_lines.append("| --- | --- | --- | --- | --- |")
-    for entry in summary_entries:
-        rtype, rname, total, correct, incorrect, anchor = entry
-        summary_lines.append(f"| {rtype} | [{rname}](#{anchor}) | {total} | {correct} | {incorrect} |")
-    
-    if left_dict:
-        summary_lines.append("\n## Unmatched Resources in Left Template\n")
-        summary_lines.append("| Resource Type | Name |")
-        summary_lines.append("| --- | --- |")
-        for res in left_dict.values():
-            rtype = res.get("type", "Unknown type")
-            rname = res.get("name", "Unknown name")
-            summary_lines.append(f"| {rtype} | {rname} |")
-    if right_dict:
-        summary_lines.append("\n## Unmatched Resources in Right Template\n")
-        summary_lines.append("| Resource Type | Name |")
-        summary_lines.append("| --- | --- |")
-        for res in right_dict.values():
-            rtype = res.get("type", "Unknown type")
-            rname = res.get("name", "Unknown name")
-            summary_lines.append(f"| {rtype} | {rname} |")
-
-    output_sections = []
-    output_sections.extend(summary_lines)
-    output_sections.append("\n---\n")
-    output_sections.extend(detailed_sections)
+    if args.format == "html":
+        final_output = generate_html_output(summary_entries, ignored_properties, left_dict, right_dict, detailed_sections)
+    else:
+        final_output = "\n".join([generate_markdown_summary(summary_entries, ignored_properties, left_dict, right_dict), "---"] + detailed_sections)
 
     try:
         with open(args.output, 'w') as f:
-            f.write("\n".join(output_sections))
+            f.write(final_output)
     except Exception as e:
         exit_with_error(f"Error: Failed to write output file '{args.output}': {e}")
 
