@@ -50,10 +50,25 @@ def load_yaml_file(filepath):
     except Exception as e:
         exit_with_error(f"Error: Failed to read YAML config file '{filepath}': {e}")
 
+def sort_list_if_possible(lst):
+    """
+    If lst is a non-empty list of dictionaries, attempt to sort it.
+    First, if every dict has a "name" key, sort by that.
+    Otherwise, if every dict has an "id" key, sort by that.
+    Otherwise, leave the list unchanged.
+    """
+    if isinstance(lst, list) and lst and all(isinstance(item, dict) for item in lst):
+        if all("name" in item for item in lst):
+            return sorted(lst, key=lambda x: x["name"])
+        elif all("id" in item for item in lst):
+            return sorted(lst, key=lambda x: x["id"])
+    return lst
+
 def flatten_json(data, parent_key=''):
     """
     Recursively flattens JSON into a dict mapping full property paths to values.
-    Lists are indexed.
+    Lists are indexed. If a list contains dictionaries with a "name" or "id" property,
+    it will be sorted in memory before flattening.
     """
     items = {}
     if isinstance(data, dict):
@@ -62,6 +77,7 @@ def flatten_json(data, parent_key=''):
             if isinstance(v, dict):
                 items.update(flatten_json(v, new_key))
             elif isinstance(v, list):
+                v = sort_list_if_possible(v)
                 for i, item in enumerate(v):
                     list_key = f"{new_key}[{i}]"
                     if isinstance(item, (dict, list)):
@@ -71,6 +87,7 @@ def flatten_json(data, parent_key=''):
             else:
                 items[new_key] = v
     elif isinstance(data, list):
+        data = sort_list_if_possible(data)
         for i, item in enumerate(data):
             new_key = f"{parent_key}[{i}]"
             if isinstance(item, (dict, list)):

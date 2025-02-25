@@ -27,6 +27,10 @@ The output format supports the following:
 - **Clickable Anchors:**  
   The resource names in the summary are clickable links that scroll down to their detailed comparison sections.
 
+- **Nested Array Sorting:**  
+  *New in version 0.0.6:*  
+  The script now automatically sorts arrays in memory before performing comparisons when the arrays contain objects. If the objects have a `name` property, the array is sorted by that property; if not, but an `id` property exists, sorting is done on that. This ensures that nested arrays with unordered objects are compared correctly without altering the output.
+
 ## Download or Install
 
 ### PyPI
@@ -120,6 +124,10 @@ python arm-compare.py --left samples/left.json --right samples/right.json --conf
 ```
 
 ## Release History
+
+### Version 0.0.6
+- **Nested Array Sorting:**  
+  Arrays that contain objects are now automatically sorted in memory prior to comparison. If the objects have a `name` property, they are sorted by that; if not, but an `id` property exists, sorting is performed on that instead. This enhancement ensures that nested arrays with objects in differing orders are compared correctly.
 
 ### Version 0.0.5
 - **XLSX Output Support:**  
