@@ -2,7 +2,11 @@
 
 ARM Compare is a Python script designed to compare two Azure Resource Manager (ARM) template export files. The script focuses on comparing the configuration attributes of resources, generating a detailed report that includes both a summary and a full property-by-property comparison for each matched resource.
 
-The report contains clickable anchors in the summary table, allowing you to jump directly to the detailed comparison for any resource.
+The output format supports the following:
+
+* Markdown
+* HTML (default)
+* XLSX
 
 ## Features
 
@@ -50,16 +54,16 @@ arm_compare.main()
 
 1. **Clone the Repository:**
 
-   ```bash
-   git clone https://github.com/Philcartmell/azure-arm-compare.git
-   cd azure-arm-compare
-   ```
+```bash
+git clone https://github.com/Philcartmell/azure-arm-compare.git
+cd azure-arm-compare
+```
 
 2. **Install Dependencies:**
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+pip install -r requirements.txt
+```
 
 ## How to Use It
 
@@ -71,7 +75,16 @@ Run the script using the command line with the following arguments:
 - `--right`: Path to the right ARM template JSON file.
 - `--config`: (Optional) Path to a YAML configuration file.
 - `--output`: Path to the output file where the comparison result will be saved.
-- `--format`: (Optional) Output format: either `markdown` or `html` (default).
+- `--format`: (Optional) Output format: `markdown`, `html`, or `xlsx`. The default is `html`.
+
+**Example for XLSX Output:**
+
+```bash
+python arm-compare.py --left samples/left.json --right samples/right.json \
+  --config config.yaml --output sample_output.xlsx --format xlsx
+```
+
+When generating XLSX output, the script creates a workbook with two sheets: one for the summary & ignored properties, and another for all detailed comparisons.
 
 ## Exporting ARM Templates
 
@@ -108,11 +121,17 @@ python arm-compare.py --left samples/left.json --right samples/right.json --conf
 
 ## Release History
 
+### Version 0.0.5
+- **XLSX Output Support:**  
+  Added a new `--format xlsx` option to generate an Excel workbook containing two sheets:
+  - **Summary & Ignored** with overall summary info.
+  - **Details** with a detailed, property-level comparison for each resource.
+
 ### Version 0.0.4
 
 Adjustments related to [Issue 7](https://github.com/Philcartmell/azure-arm-compare/issues/7)
 
-* The output file is now explictly encoded using utf-8
+* The output file is now explicitly encoded using utf-8
 * Removal of unicode ✗ symbol \u2717 and replaced with standard ASCII 'X'.
 
 ### Version 0.0.3
