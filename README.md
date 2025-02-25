@@ -8,6 +8,8 @@ The output format supports the following:
 * HTML (default)
 * XLSX
 
+![alt text](samples/xlsx-screenshot.png)
+
 ## Features
 
 - **Resource Pairing by Type and Name:**  
