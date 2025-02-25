@@ -7,6 +7,15 @@ import fnmatch
 import os
 import sys
 
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment
+from openpyxl.utils import get_column_letter
+from openpyxl.styles import PatternFill
+
+# Added import for openpyxl
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
+
 def exit_with_error(message):
     sys.stderr.write(message + "\n")
     sys.stderr.flush()
@@ -18,7 +27,9 @@ def parse_arguments():
     parser.add_argument('--right', required=True, help='Right ARM template JSON file')
     parser.add_argument('--config', help='Configuration YAML file (optional)')
     parser.add_argument('--output', required=True, help='Output file')
-    parser.add_argument('--format', choices=['markdown', 'html'], default='html', help='Output format: markdown or html (default)')
+    # Updated the choices to include 'xlsx'
+    parser.add_argument('--format', choices=['markdown', 'html', 'xlsx'], default='html',
+                        help='Output format: markdown, html, or xlsx (default: html)')
     return parser.parse_args()
 
 def load_json_file(filepath):
@@ -87,7 +98,6 @@ def generate_markdown_table(resource_key_display, left_flat, right_flat, ignore_
     """
     md_lines = []
     md_lines.append(f"### Comparison for Resource: {resource_key_display}\n")
-    # Matched column is the first column
     md_lines.append("| Matched | Property Path | Left Value | Right Value |")
     md_lines.append("| --- | --- | --- | --- |")
     all_keys = set(left_flat.keys()).union(set(right_flat.keys()))
@@ -139,9 +149,14 @@ def generate_html_table(resource_key_display, left_flat, right_flat, ignore_rule
             fail_cell = "" if left_flat.get(key, '') == right_flat.get(key, '') else "X"
         left_val = left_flat.get(key, '')
         right_val = right_flat.get(key, '')
-        # When Property Path cell is clicked, it highlights the row.
-        html_lines.append(f"<tr><td>{fail_cell}</td><td onclick='highlightRow(this);' style='cursor: pointer;'>{key}</td>"
-                          f"<td>{format_html_value(left_val)}</td><td>{format_html_value(right_val)}</td></tr>")
+        html_lines.append(
+            f"<tr>"
+            f"<td>{fail_cell}</td>"
+            f"<td onclick='highlightRow(this);' style='cursor: pointer;'>{key}</td>"
+            f"<td>{format_html_value(left_val)}</td>"
+            f"<td>{format_html_value(right_val)}</td>"
+            f"</tr>"
+        )
     html_lines.append("</tbody>")
     html_lines.append("</table>")
     return "\n".join(html_lines)
@@ -169,7 +184,16 @@ def generate_html_summary(summary_entries, ignored_properties, left_dict, right_
     html.append("<tbody>")
     for entry in summary_entries:
         rtype, rname, total, ignored, correct, incorrect, anchor = entry
-        html.append(f"<tr><td>{rtype}</td><td><a href='#{anchor}'>{rname}</a></td><td>{total}</td><td>{ignored}</td><td>{correct}</td><td>{incorrect}</td></tr>")
+        html.append(
+            f"<tr>"
+            f"<td>{rtype}</td>"
+            f"<td><a href='#{anchor}'>{rname}</a></td>"
+            f"<td>{total}</td>"
+            f"<td>{ignored}</td>"
+            f"<td>{correct}</td>"
+            f"<td>{incorrect}</td>"
+            f"</tr>"
+        )
     html.append("</tbody>")
     html.append("</table>")
     if left_dict:
@@ -219,7 +243,9 @@ def generate_markdown_summary(summary_entries, ignored_properties, left_dict, ri
     lines.append("| --- | --- | --- | --- | --- | --- |")
     for entry in summary_entries:
         rtype, rname, total, ignored, correct, incorrect, anchor = entry
-        lines.append(f"| {rtype} | [{rname}](#{anchor}) | {total} | {ignored} | {correct} | {incorrect} |")
+        lines.append(
+            f"| {rtype} | [{rname}](#{anchor}) | {total} | {ignored} | {correct} | {incorrect} |"
+        )
     if left_dict:
         lines.append("\n## Unmatched Resources in Left Template\n")
         lines.append("| Resource Type | Name |")
@@ -282,6 +308,384 @@ def generate_html_output(summary_entries, ignored_properties, left_dict, right_d
     html_lines.append("</body>")
     html_lines.append("</html>")
     return "\n".join(html_lines)
+
+#
+# Generate XLSX header cell
+#
+def set_header_cell(ws, row, col, value, font, alignment=None):
+    """
+    Sets the given cell's value, font, and (optionally) alignment.
+    """
+    cell = ws.cell(row=row, column=col)
+    cell.value = value
+    cell.font = font
+    if alignment:
+        cell.alignment = alignment
+
+
+def generate_xlsx_output(summary_entries, ignored_properties, left_dict, right_dict, detailed_data):
+    """
+    Generates the XLSX output with two sheets:
+    1) "Summary & Ignored" with summary info, ignored properties, unmatched resources
+    2) "Details" with a merged row for each resource that reads:
+       "Comparison for Resource: {ResourceType}/{ResourceName}",
+       followed by columns: Matched, Property Path, Left Value, Right Value.
+    """
+    wb = Workbook()
+    ws_summary = wb.active
+    ws_summary.title = "Summary & Ignored"
+
+    # Formatting
+    ws_summary.column_dimensions['A'].width = 64
+    ws_summary.column_dimensions['B'].width = 32
+    ws_summary.column_dimensions['C'].width = 16
+    ws_summary.column_dimensions['D'].width = 16
+    ws_summary.column_dimensions['E'].width = 16
+    ws_summary.column_dimensions['F'].width = 16
+
+    bold_font = Font(bold=True)
+    center_alignment = Alignment(horizontal='center')
+    orange_fill = PatternFill(start_color='FFF2CC', end_color='FFF2CC', fill_type='solid')
+    red_fill = PatternFill(start_color='FFC7CE', end_color='FFC7CE', fill_type='solid')
+    green_fill = PatternFill(start_color='C6EFCE', end_color='C6EFCE', fill_type='solid')
+
+    # Write ignored properties (if any)
+    row = 1
+    ws_summary.cell(row=row, column=1, value="Ignored Properties").font = bold_font
+    row += 1
+    if ignored_properties:
+        for prop in sorted(ignored_properties):
+            ws_summary.cell(row=row, column=1, value=prop)
+            row += 1
+    else:
+        ws_summary.cell(row=row, column=1, value="None")
+        row += 1
+
+    row += 1  # blank line
+
+    # Write summary table header
+    ws_summary.cell(row=row, column=1, value="Resource Type").font = bold_font
+    ws_summary.cell(row=row, column=2, value="Resource Name").font = bold_font
+
+    set_header_cell(ws_summary, row, 3, "Total Properties", bold_font, center_alignment)
+    set_header_cell(ws_summary, row, 4, "Ignored", bold_font, center_alignment)
+    set_header_cell(ws_summary, row, 5, "Correct", bold_font, center_alignment)
+    set_header_cell(ws_summary, row, 6, "Incorrect", bold_font, center_alignment)
+
+    row += 1
+
+    # Write summary rows
+    for entry in summary_entries:
+        rtype, rname, total, ignored, correct, incorrect, _anchor = entry
+        ws_summary.cell(row=row, column=1, value=rtype)
+        ws_summary.cell(row=row, column=2, value=rname)
+        
+        cell_3 = ws_summary.cell(row=row, column=3, value=total)
+        cell_3.alignment = center_alignment
+
+        cell_4 = ws_summary.cell(row=row, column=4, value=ignored)
+        cell_4.alignment = center_alignment
+
+        cell_5 = ws_summary.cell(row=row, column=5, value=correct)
+        cell_5.alignment = center_alignment
+
+        cell_6 = ws_summary.cell(row=row, column=6, value=incorrect)
+        cell_6.alignment = center_alignment
+
+        row += 1
+
+    row += 1  # blank line
+
+    # Unmatched resources in left template
+    ws_summary.cell(row=row, column=1, value="Unmatched Resources in Left Template").font = bold_font
+    row += 1
+    if left_dict:
+        ws_summary.cell(row=row, column=1, value="Resource Type")
+        ws_summary.cell(row=row, column=2, value="Name")
+        row += 1
+        for res in left_dict.values():
+            rtype = res.get("type", "Unknown type")
+            rname = res.get("name", "Unknown name")
+            ws_summary.cell(row=row, column=1, value=rtype)
+            ws_summary.cell(row=row, column=2, value=rname)
+            row += 1
+    else:
+        ws_summary.cell(row=row, column=1, value="None")
+        row += 1
+
+    row += 2
+
+    # Unmatched resources in right template
+    ws_summary.cell(row=row, column=1, value="Unmatched Resources in Right Template").font = bold_font
+    row += 1
+    if right_dict:
+        ws_summary.cell(row=row, column=1, value="Resource Type")
+        ws_summary.cell(row=row, column=2, value="Name")
+        row += 1
+        for res in right_dict.values():
+            rtype = res.get("type", "Unknown type")
+            rname = res.get("name", "Unknown name")
+            ws_summary.cell(row=row, column=1, value=rtype)
+            ws_summary.cell(row=row, column=2, value=rname)
+            row += 1
+    else:
+        ws_summary.cell(row=row, column=1, value="None")
+        row += 1
+
+    # --- Summary & Ignored Sheet (unchanged from your current code) ---
+    # ... Keep all of your existing logic for writing ignored properties,
+    # ... summary rows, unmatched resources, etc.
+
+    # Example placeholders (do NOT delete your existing summary code):
+    bold_font = Font(bold=True)
+    larger_bold_font = Font(bold=True, size=16)
+    center_alignment = Alignment(horizontal='center')
+    orange_fill = PatternFill(start_color='FFF2CC', end_color='FFF2CC', fill_type='solid')
+    red_fill = PatternFill(start_color='FFC7CE', end_color='FFC7CE', fill_type='solid')
+    green_fill = PatternFill(start_color='C6EFCE', end_color='C6EFCE', fill_type='solid')
+
+    # (Your existing summary code continues here; nothing changed)
+
+    # --- Details Sheet ---
+    ws_details = wb.create_sheet("Details")
+
+    details_row = 1
+    for (rtype, rname, comparisons) in detailed_data:
+        # 1) Merged header row for each resource
+        ws_details.merge_cells(start_row=details_row, start_column=1, end_row=details_row, end_column=4)
+        resource_cell = ws_details.cell(row=details_row, column=1)
+        resource_cell.value = f"{rtype}/{rname}"
+        resource_cell.font = larger_bold_font
+        details_row += 1
+
+        # 2) Header row for matched, property path, left value, right value
+        ws_details.cell(row=details_row, column=1, value="Matched").font = bold_font
+        ws_details.cell(row=details_row, column=2, value="Property Path").font = bold_font
+        ws_details.cell(row=details_row, column=3, value="Left Value").font = bold_font
+        ws_details.cell(row=details_row, column=4, value="Right Value").font = bold_font
+
+        # Formatting
+        ws_details.column_dimensions['A'].width = 12
+        ws_details.column_dimensions['B'].width = 64
+        ws_details.column_dimensions['C'].width = 64
+        ws_details.column_dimensions['D'].width = 64
+
+        details_row += 1
+
+        # 3) One row per property comparison
+        for matched, prop_path, left_val, right_val in comparisons:
+            if matched == "Ignored":
+                row_fill = orange_fill
+            elif matched == "X":
+                row_fill = red_fill
+            else:  # matched == "" => correct
+                row_fill = green_fill
+
+            # Write each cell
+            matched_cell = ws_details.cell(row=details_row, column=1)
+            matched_cell.value = matched
+            matched_cell.alignment = center_alignment
+
+            ws_details.cell(row=details_row, column=2, value=prop_path)
+            ws_details.cell(row=details_row, column=3, value=str(left_val))
+            ws_details.cell(row=details_row, column=4, value=str(right_val))
+
+            # Apply fill across the row
+            for col in range(1, 5):
+                ws_details.cell(row=details_row, column=col).fill = row_fill
+
+            # Apply wrap text to columns C and D (columns 3 and 4) for all rows
+            for row_cells in ws_details.iter_rows(min_col=3, max_col=4, min_row=1, max_row=ws_details.max_row):
+                for cell in row_cells:
+                    # Keep any existing horizontal/vertical setting if desired, just set wrap_text=True
+                    cell.alignment = Alignment(wrap_text=True)
+
+            details_row += 1
+
+        # Add a blank row after each resource to separate blocks
+        details_row += 1
+
+    # (Optionally adjust column widths or call auto_size)
+    for sheet in [ws_summary, ws_details]:
+        for col in range(1, sheet.max_column + 1):
+            sheet.column_dimensions[get_column_letter(col)].auto_size = True
+
+    return wb
+
+#
+# New function to generate XLSX output
+#
+def generate_xlsx_outputxxx(summary_entries, ignored_properties, left_dict, right_dict, detailed_data):
+    """
+    Generates the XLSX output with two sheets:
+    1) "Summary & Ignored" with summary info, ignored properties, unmatched resources
+    2) "Details" with the detailed comparison for each resource
+    """
+    wb = Workbook()
+    ws_summary = wb.active
+    ws_summary.title = "Summary & Ignored"
+
+    # Formatting
+    ws_summary.column_dimensions['A'].width = 64
+    ws_summary.column_dimensions['B'].width = 32
+    ws_summary.column_dimensions['C'].width = 16
+    ws_summary.column_dimensions['D'].width = 16
+    ws_summary.column_dimensions['E'].width = 16
+    ws_summary.column_dimensions['F'].width = 16
+
+    bold_font = Font(bold=True)
+    center_alignment = Alignment(horizontal='center')
+    orange_fill = PatternFill(start_color='FFF2CC', end_color='FFF2CC', fill_type='solid')
+    red_fill = PatternFill(start_color='FFC7CE', end_color='FFC7CE', fill_type='solid')
+    green_fill = PatternFill(start_color='C6EFCE', end_color='C6EFCE', fill_type='solid')
+
+    # Write ignored properties (if any)
+    row = 1
+    ws_summary.cell(row=row, column=1, value="Ignored Properties").font = bold_font
+    row += 1
+    if ignored_properties:
+        for prop in sorted(ignored_properties):
+            ws_summary.cell(row=row, column=1, value=prop)
+            row += 1
+    else:
+        ws_summary.cell(row=row, column=1, value="None")
+        row += 1
+
+    row += 1  # blank line
+
+    # Write summary table header
+    ws_summary.cell(row=row, column=1, value="Resource Type").font = bold_font
+    ws_summary.cell(row=row, column=2, value="Resource Name").font = bold_font
+
+    set_header_cell(ws_summary, row, 3, "Total Properties", bold_font, center_alignment)
+    set_header_cell(ws_summary, row, 4, "Ignored", bold_font, center_alignment)
+    set_header_cell(ws_summary, row, 5, "Correct", bold_font, center_alignment)
+    set_header_cell(ws_summary, row, 6, "Incorrect", bold_font, center_alignment)
+
+    row += 1
+
+    # Write summary rows
+    for entry in summary_entries:
+        rtype, rname, total, ignored, correct, incorrect, _anchor = entry
+        ws_summary.cell(row=row, column=1, value=rtype)
+        ws_summary.cell(row=row, column=2, value=rname)
+        
+        cell_3 = ws_summary.cell(row=row, column=3, value=total)
+        cell_3.alignment = center_alignment
+
+        cell_4 = ws_summary.cell(row=row, column=4, value=ignored)
+        cell_4.alignment = center_alignment
+
+        cell_5 = ws_summary.cell(row=row, column=5, value=correct)
+        cell_5.alignment = center_alignment
+
+        cell_6 = ws_summary.cell(row=row, column=6, value=incorrect)
+        cell_6.alignment = center_alignment
+
+        row += 1
+
+    row += 1  # blank line
+
+    # Unmatched resources in left template
+    ws_summary.cell(row=row, column=1, value="Unmatched Resources in Left Template").font = bold_font
+    row += 1
+    if left_dict:
+        ws_summary.cell(row=row, column=1, value="Resource Type")
+        ws_summary.cell(row=row, column=2, value="Name")
+        row += 1
+        for res in left_dict.values():
+            rtype = res.get("type", "Unknown type")
+            rname = res.get("name", "Unknown name")
+            ws_summary.cell(row=row, column=1, value=rtype)
+            ws_summary.cell(row=row, column=2, value=rname)
+            row += 1
+    else:
+        ws_summary.cell(row=row, column=1, value="None")
+        row += 1
+
+    row += 2
+
+    # Unmatched resources in right template
+    ws_summary.cell(row=row, column=1, value="Unmatched Resources in Right Template").font = bold_font
+    row += 1
+    if right_dict:
+        ws_summary.cell(row=row, column=1, value="Resource Type")
+        ws_summary.cell(row=row, column=2, value="Name")
+        row += 1
+        for res in right_dict.values():
+            rtype = res.get("type", "Unknown type")
+            rname = res.get("name", "Unknown name")
+            ws_summary.cell(row=row, column=1, value=rtype)
+            ws_summary.cell(row=row, column=2, value=rname)
+            row += 1
+    else:
+        ws_summary.cell(row=row, column=1, value="None")
+        row += 1
+
+    #
+    # Details sheet
+    #
+    ws_details = wb.create_sheet("Details")
+
+    # Header
+    ws_details.cell(row=1, column=1, value="Resource Type").font = bold_font
+    ws_details.cell(row=1, column=2, value="Name").font = bold_font
+    
+    match_header = ws_details.cell(row=1, column=3)
+    match_header.value = "Matched"
+    match_header.font = bold_font
+    match_header.alignment = center_alignment
+
+    ws_details.cell(row=1, column=4, value="Property Path").font = bold_font
+    ws_details.cell(row=1, column=5, value="Left Value").font = bold_font
+    ws_details.cell(row=1, column=6, value="Right Value").font = bold_font
+
+    # Formatting
+    ws_details.column_dimensions['A'].width = 64
+    ws_details.column_dimensions['B'].width = 32
+    ws_details.column_dimensions['C'].width = 12
+    ws_details.column_dimensions['D'].width = 64
+    ws_details.column_dimensions['E'].width = 32
+    ws_details.column_dimensions['F'].width = 32
+
+    details_row = 2
+    for (rtype, rname, comparisons) in detailed_data:
+        for comp in comparisons:
+            matched, prop_path, left_val, right_val = comp
+
+            # Determine the fill based on 'matched' value
+            if matched == "Ignored":
+                row_fill = orange_fill
+            elif matched == "X":
+                row_fill = red_fill
+            else:  # assume matched == "" for "correct"
+                row_fill = green_fill
+                
+            # Write row
+            ws_details.cell(row=details_row, column=1, value=rtype)
+            ws_details.cell(row=details_row, column=2, value=rname)
+
+            # Center the matched column
+            matched_cell = ws_details.cell(row=details_row, column=3)
+            matched_cell.value = matched
+            matched_cell.alignment = center_alignment
+
+            ws_details.cell(row=details_row, column=4, value=prop_path)
+            ws_details.cell(row=details_row, column=5, value=str(left_val))
+            ws_details.cell(row=details_row, column=6, value=str(right_val))
+
+            # Apply the same fill to every cell in the row
+            for col in range(1, 7):
+                ws_details.cell(row=details_row, column=col).fill = row_fill
+
+            details_row += 1
+
+    # Auto-fit column widths (roughly)
+    for sheet in [ws_summary, ws_details]:
+        for col in range(1, sheet.max_column + 1):
+            sheet.column_dimensions[get_column_letter(col)].auto_size = True
+
+    return wb
 
 def main():
     args = parse_arguments()
@@ -347,6 +751,9 @@ def main():
             del left_dict[key]
             del right_dict[key]
 
+    # We'll collect the structured detail data for xlsx
+    detailed_data = []
+
     detailed_sections = []
     for left_res, right_res in resource_pairs:
         resource_type = left_res.get("type", "Unknown type")
@@ -354,6 +761,7 @@ def main():
         resource_key_display = f"{resource_type} / {resource_name}"
         anchor = generate_anchor(resource_type, resource_name)
 
+        # If the entire resource type is ignored by some rule, skip it
         if ignore_rules and any(fnmatch.fnmatch(resource_type, pattern) for pattern in ignore_rules):
             continue
 
@@ -365,36 +773,72 @@ def main():
         incorrect = 0
         ignored_count = 0
         all_keys = set(left_flat.keys()).union(set(right_flat.keys()))
+
+        # We'll also collect detail rows for xlsx
+        comparison_rows = []
+
         for key in sorted(all_keys):
             is_ignored = ignore_rules and any(fnmatch.fnmatch(key, pattern) for pattern in ignore_rules)
+            left_val = left_flat.get(key, '')
+            right_val = right_flat.get(key, '')
+
             total += 1
             if is_ignored:
                 ignored_count += 1
+                matched = "Ignored"
+                ignored_properties.add(key)
             else:
-                if left_flat.get(key, '') == right_flat.get(key, ''):
+                if left_val == right_val:
                     correct += 1
+                    matched = ""
                 else:
                     incorrect += 1
+                    matched = "X"
+
+            # For xlsx detail
+            comparison_rows.append((matched, key, left_val, right_val))
 
         summary_entries.append((resource_type, resource_name, total, ignored_count, correct, incorrect, anchor))
+
+        # Store the detail for xlsx
+        detailed_data.append((resource_type, resource_name, comparison_rows))
+
+        # Also build up the "detailed_section" string for HTML/Markdown
         detailed_section = f'<a id="{anchor}"></a>\n'
         if args.format == "html":
             detailed_section += generate_html_table(resource_key_display, left_flat, right_flat, ignore_rules, ignored_properties)
         else:
+            # For markdown we do:
             detailed_section += generate_markdown_table(resource_key_display, left_flat, right_flat, ignore_rules, ignored_properties)
         detailed_sections.append(detailed_section)
         detailed_sections.append("\n")
 
     if args.format == "html":
         final_output = generate_html_output(summary_entries, ignored_properties, left_dict, right_dict, detailed_sections)
-    else:
-        final_output = "\n".join([generate_markdown_summary(summary_entries, ignored_properties, left_dict, right_dict), "---"] + detailed_sections)
+        try:
+            with open(args.output, 'w', encoding='utf-8') as f:
+                f.write(final_output)
+        except Exception as e:
+            exit_with_error(f"Error: Failed to write output file '{args.output}': {e}")
 
-    try:
-        with open(args.output, 'w', encoding='utf-8') as f:
-            f.write(final_output)
-    except Exception as e:
-        exit_with_error(f"Error: Failed to write output file '{args.output}': {e}")
+    elif args.format == "markdown":
+        final_output = "\n".join([
+            generate_markdown_summary(summary_entries, ignored_properties, left_dict, right_dict),
+            "---"
+        ] + detailed_sections)
+        try:
+            with open(args.output, 'w', encoding='utf-8') as f:
+                f.write(final_output)
+        except Exception as e:
+            exit_with_error(f"Error: Failed to write output file '{args.output}': {e}")
+
+    # New XLSX output handling
+    else:  # args.format == "xlsx"
+        wb = generate_xlsx_output(summary_entries, ignored_properties, left_dict, right_dict, detailed_data)
+        try:
+            wb.save(args.output)
+        except Exception as e:
+            exit_with_error(f"Error: Failed to write XLSX file '{args.output}': {e}")
 
 if __name__ == '__main__':
     main()
