@@ -108,6 +108,13 @@ python arm-compare.py --left samples/left.json --right samples/right.json --conf
 
 ## Release History
 
+### Version 0.0.4
+
+Adjustments related to [Issue 7](https://github.com/Philcartmell/azure-arm-compare/issues/7)
+
+* The output file is now explictly encoded using utf-8
+* Removal of unicode ✗ symbol \u2717 and replaced with standard ASCII 'X'.
+
 ### Version 0.0.3
 
 No functional changes - Fix to PyPI release.
