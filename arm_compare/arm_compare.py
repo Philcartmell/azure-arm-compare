@@ -82,7 +82,7 @@ def generate_markdown_table(resource_key_display, left_flat, right_flat, ignore_
     """
     Given two flattened dicts for a resource (left and right), generate a Markdown table comparing the property values.
     If a property key matches an ignore rule, its fail result is set to "Ignored" (and added to ignored_set);
-    if it doesn't match and the left/right values differ, a cross (✗) is printed;
+    if it doesn't match and the left/right values differ, a cross (X) is printed;
     if they match, the cell is left empty.
     """
     md_lines = []
@@ -97,7 +97,7 @@ def generate_markdown_table(resource_key_display, left_flat, right_flat, ignore_
             fail_cell = "Ignored"
             ignored_set.add(key)
         else:
-            fail_cell = "" if left_flat.get(key, '') == right_flat.get(key, '') else "✗"
+            fail_cell = "" if left_flat.get(key, '') == right_flat.get(key, '') else "X"
         left_val = left_flat.get(key, '')
         right_val = right_flat.get(key, '')
         md_lines.append(f"| {fail_cell} | {key} | {left_val} | {right_val} |")
@@ -120,7 +120,7 @@ def generate_html_table(resource_key_display, left_flat, right_flat, ignore_rule
     """
     Given two flattened dicts for a resource (left and right), generate an HTML table comparing the property values.
     If a property key matches an ignore rule, its cell will display "Ignored" (and be added to ignored_set);
-    if they differ, a cross (✗) is displayed in the "Matched" column.
+    if they differ, a cross (X) is displayed in the "Matched" column.
     """
     html_lines = []
     html_lines.append(f"<h3>Comparison for Resource: {resource_key_display}</h3>")
@@ -136,7 +136,7 @@ def generate_html_table(resource_key_display, left_flat, right_flat, ignore_rule
             fail_cell = "Ignored"
             ignored_set.add(key)
         else:
-            fail_cell = "" if left_flat.get(key, '') == right_flat.get(key, '') else "✗"
+            fail_cell = "" if left_flat.get(key, '') == right_flat.get(key, '') else "X"
         left_val = left_flat.get(key, '')
         right_val = right_flat.get(key, '')
         # When Property Path cell is clicked, it highlights the row.
@@ -391,7 +391,7 @@ def main():
         final_output = "\n".join([generate_markdown_summary(summary_entries, ignored_properties, left_dict, right_dict), "---"] + detailed_sections)
 
     try:
-        with open(args.output, 'w') as f:
+        with open(args.output, 'w', encoding='utf-8') as f:
             f.write(final_output)
     except Exception as e:
         exit_with_error(f"Error: Failed to write output file '{args.output}': {e}")
